@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="static/style.css">
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2><i class="fab fa-youtube"></i> YouTube Downloader</h2>
+            <p>Download your favorite videos in high quality</p>
+        </div>
+
+        <div class="content">
+            <!-- Form for fetching video info -->
+            <div class="form-section">
+                <form method="POST">
+                    <input type="hidden" name="step" value="info">
+
+                    <div class="input-group">
+                        <label><i class="fas fa-link"></i> Paste your YouTube URL:</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="custom_url" placeholder="https://www.youtube.com/watch?v=..." required>
+                            <i class="fas fa-link input-icon"></i>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">
+                        <i class="fas fa-search"></i> Get Video Info
+                    </button>
+                </form>
+            </div>
+
+            {% if info %}
+            <hr class="divider">
+            
+            <div class="video-info">
+                <h3><i class="fas fa-info-circle"></i> Video Information</h3>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-video"></i> Title:</span>
+                        <span class="info-value">{{ info.title }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-clock"></i> Duration:</span>
+                        <span class="info-value">{{ info.duration }} seconds</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-user"></i> Uploader:</span>
+                        <span class="info-value">{{ info.uploader }}</span>
+                    </div>
+                </div>
+
+                <div class="thumbnail-container">
+                    <img src="{{ info.thumbnail }}" alt="Video Thumbnail" class="thumbnail">
+                </div>
+
+                <!-- Download options -->
+                <div class="form-section">
+                    <form method="POST">
+                        <input type="hidden" name="step" value="download">
+                        <input type="hidden" name="custom_url" value="{{ selected_url }}">
+                        
+                        <div class="input-group">
+                            <label><i class="fas fa-download"></i> Select Format:</label>
+                            <select name="format_id" required>
+                                <option value="">Choose a format...</option>
+                                {% for f in formats %}
+                                <option value="{{ f.format_id }}" class="format-option">
+                                    {{ f.resolution }} - {{ f.ext }} - {{ f.filesize }} MB
+                                    {% if 'audio' in f.vcodec or f.vcodec == 'none' %}(Audio Only){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn">
+                            <i class="fas fa-download"></i> Download Selected Format
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <div id="progress-container">
+                <div class="progress-text">
+                    <i class="fas fa-download"></i>
+                    Download Progress: <span id="progress">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <script>
+                function trackProgress(videoId) {
+                    document.getElementById("progress-container").style.display = 'block';
+                    let interval = setInterval(() => {
+                        fetch(`/progress/${videoId}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.status === "finished") {
+                                    document.getElementById("progress").innerText = "100% ✅";
+                                    document.getElementById("progress-fill").style.width = "100%";
+                                    clearInterval(interval);
+                                } else if (data.status === "downloading") {
+                                    let percent = Math.floor((data.downloaded_bytes / data.total_bytes) * 100);
+                                    document.getElementById("progress").innerText = percent + "%";
+                                    document.getElementById("progress-fill").style.width = percent + "%";
+                                }
+                            });
+                    }, 1000);
+                }
+
+                // Add loading state to buttons
+                document.querySelectorAll('form').forEach(form => {
+                    form.addEventListener('submit', function(e) {
+                        const button = this.querySelector('button[type="submit"]');
+                        const originalText = button.innerHTML;
+                        button.innerHTML = '<span class="loading"><span class="spinner"></span> Processing...</span>';
+                        button.disabled = true;
+                        
+                        // Re-enable after 30 seconds as fallback
+                        setTimeout(() => {
+                            button.innerHTML = originalText;
+                            button.disabled = false;
+                        }, 30000);
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</body>
+
+</html>
