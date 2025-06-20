@@ -331,3 +331,29 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        .search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.search-item {
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.search-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-small {
+    padding: 4px 10px;
+    font-size: 14px;
+    margin-top: 5px;
+}
