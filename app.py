@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, send_file, jsonify
 import yt_dlp
 import os
 from pathlib import Path
+import time
+import random
 
 app = Flask(__name__)
 
@@ -17,6 +19,47 @@ SAMPLE_VIDEOS = {
 # Global dictionary to store download progress
 download_progress = {}
 
+def get_ydl_opts(progress_hook=None, output_template=None):
+    """Get yt-dlp options with anti-bot measures"""
+    # Get the directory where app.py is located
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    cookies_path = os.path.join(app_dir, 'cookies.txt')
+    
+    opts = {
+        'quiet': True,
+        'no_warnings': True,
+        # Use cookies file for authentication
+        'cookiefile': cookies_path,
+        # Anti-bot measures
+        'sleep_interval': random.uniform(1, 3),
+        'max_sleep_interval': 5,
+        'sleep_interval_requests': random.uniform(1, 3),
+        'sleep_interval_subtitles': random.uniform(1, 3),
+        # User agent rotation
+        'http_headers': {
+            'User-Agent': random.choice([
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            ])
+        },
+        # Additional options to bypass restrictions
+        'extractor_retries': 3,
+        'fragment_retries': 3,
+        'skip_unavailable_fragments': True,
+        # Additional YouTube-specific options
+        'youtube_include_dash_manifest': False,
+    }
+    
+    if progress_hook:
+        opts['progress_hooks'] = [progress_hook]
+    
+    if output_template:
+        opts['outtmpl'] = output_template
+        opts['merge_output_format'] = 'mp4'
+    
+    return opts
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -26,9 +69,23 @@ def index():
         if not video_url:
             return "❌ Error: No URL provided."
 
+        # Add delay to avoid being detected as bot
+        time.sleep(random.uniform(1, 2))
+
         if step == "info":
             try:
-                with yt_dlp.YoutubeDL({'quiet': True, 'skip_download': True}) as ydl:
+                opts = get_ydl_opts()
+                opts['skip_download'] = True
+                
+                # Check if cookies file exists
+                app_dir = os.path.dirname(os.path.abspath(__file__))
+                cookies_path = os.path.join(app_dir, 'cookies.txt')
+                if not os.path.exists(cookies_path):
+                    return render_template('index.html', 
+                                         samples=SAMPLE_VIDEOS, 
+                                         error="cookies.txt file not found. Please ensure it's in the same directory as app.py")
+                
+                with yt_dlp.YoutubeDL(opts) as ydl:
                     info_dict = ydl.extract_info(video_url, download=False)
 
                     if info_dict.get('_type') == 'playlist':
@@ -49,7 +106,12 @@ def index():
                     return render_template('index.html', samples=SAMPLE_VIDEOS, info=info_dict, formats=formats, selected_url=video_url)
 
             except Exception as e:
-                return f"❌ Error getting video info: {str(e)}"
+                error_msg = str(e)
+                if "Sign in to confirm you're not a bot" in error_msg:
+                    return render_template('index.html', 
+                                         samples=SAMPLE_VIDEOS, 
+                                         error="YouTube is blocking automated downloads. Try again in a few minutes or use a different video.")
+                return f"❌ Error getting video info: {error_msg}"
 
         elif step == "download":
             format_id = request.form.get('format_id')
@@ -69,47 +131,57 @@ def index():
                     download_progress[video_id] = {'status': 'finished'}
 
             try:
-                with yt_dlp.YoutubeDL({'quiet': True, 'skip_download': True}) as ydl:
+                # Check if cookies file exists
+                app_dir = os.path.dirname(os.path.abspath(__file__))
+                cookies_path = os.path.join(app_dir, 'cookies.txt')
+                if not os.path.exists(cookies_path):
+                    return "❌ Error: cookies.txt file not found. Please ensure it's in the same directory as app.py"
+                
+                # First get info
+                info_opts = get_ydl_opts()
+                info_opts['skip_download'] = True
+                
+                with yt_dlp.YoutubeDL(info_opts) as ydl:
                     info_dict = ydl.extract_info(video_url, download=False)
+
+                # Add delay between requests
+                time.sleep(random.uniform(2, 4))
 
                 if info_dict.get('_type') == 'playlist':
                     playlist_title = info_dict.get('title', 'Playlist')
                     playlist_folder = os.path.join(DOWNLOAD_FOLDER, ''.join(c for c in playlist_title if c.isalnum() or c in (' ', '_', '-')).rstrip())
                     os.makedirs(playlist_folder, exist_ok=True)
 
-                    for entry in info_dict['entries']:
+                    for i, entry in enumerate(info_dict['entries']):
                         if entry is None:
                             continue
+                        
+                        # Add delay between playlist items
+                        if i > 0:
+                            time.sleep(random.uniform(3, 6))
+                            
                         video_title = entry.get('title', 'video').strip()
                         safe_title = ''.join(c for c in video_title if c.isalnum() or c in (' ', '_', '-')).rstrip()
                         output_path_template = os.path.join(playlist_folder, safe_title + ".%(ext)s")
 
-                        ydl_opts = {
-                            'outtmpl': output_path_template,
-                            'format': f"{format_id}+bestaudio/best" if format_id else "best",
-                            'merge_output_format': 'mp4',
-                            'progress_hooks': [progress_hook],
-                            'noplaylist': True
-                        }
+                        ydl_opts = get_ydl_opts(progress_hook, output_path_template)
+                        ydl_opts['format'] = f"{format_id}+bestaudio/best" if format_id else "best"
+                        ydl_opts['noplaylist'] = True
 
                         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                             ydl.download([entry['webpage_url']])
 
                     return f"✅ Playlist '{playlist_title}' downloaded to: {playlist_folder}"
 
-                # Else single video
+                # Single video download
                 video_title = info_dict.get('title', 'video').strip()
                 safe_title = ''.join(c for c in video_title if c.isalnum() or c in (' ', '_', '-')).rstrip()
                 output_path_template = os.path.join(DOWNLOAD_FOLDER, safe_title + ".%(ext)s")
                 final_path = os.path.join(DOWNLOAD_FOLDER, safe_title + ".mp4")
 
-                ydl_opts = {
-                    'outtmpl': output_path_template,
-                    'format': f"{format_id}+bestaudio/best" if format_id else "best",
-                    'merge_output_format': 'mp4',
-                    'noplaylist': True,
-                    'progress_hooks': [progress_hook]
-                }
+                ydl_opts = get_ydl_opts(progress_hook, output_path_template)
+                ydl_opts['format'] = f"{format_id}+bestaudio/best" if format_id else "best"
+                ydl_opts['noplaylist'] = True
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info_dict = ydl.extract_info(video_url, download=True)
@@ -125,7 +197,10 @@ def index():
                     return send_file(final_path, as_attachment=True, download_name=os.path.basename(final_path))
 
             except Exception as e:
-                return f"❌ Download Error: {str(e)}"
+                error_msg = str(e)
+                if "Sign in to confirm you're not a bot" in error_msg:
+                    return "❌ YouTube is blocking downloads. Please wait a few minutes and try again, or try a different video."
+                return f"❌ Download Error: {error_msg}"
 
     return render_template('index.html', samples=SAMPLE_VIDEOS)
 
