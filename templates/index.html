@@ -21,28 +21,27 @@
             <!-- Form for fetching video info -->
             <div class="form-section">
                 <form method="POST">
-                    <input type="hidden" name="step" value="info">
-
+                    <input type="hidden" name="step" value="search">
                     <div class="input-group">
-                        <label><i class="fas fa-link"></i> Paste your YouTube URL:</label>
+                        <label><i class="fas fa-search"></i> Search YouTube:</label>
                         <div class="input-wrapper">
-                            <input type="text" name="custom_url" placeholder="https://www.youtube.com/watch?v=..." required>
-                            <i class="fas fa-link input-icon"></i>
+                            <input type="text" name="search_query" placeholder="e.g. lo-fi beats, tech tutorials..."
+                                required>
+                            <i class="fas fa-search input-icon"></i>
                         </div>
                     </div>
-
                     <button type="submit" class="btn">
-                        <i class="fas fa-search"></i> Get Video Info
+                        <i class="fas fa-search"></i> Search
                     </button>
                 </form>
             </div>
 
             {% if info %}
             <hr class="divider">
-            
+
             <div class="video-info">
                 <h3><i class="fas fa-info-circle"></i> Video Information</h3>
-                
+
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="info-label"><i class="fas fa-video"></i> Title:</span>
@@ -67,7 +66,7 @@
                     <form method="POST">
                         <input type="hidden" name="step" value="download">
                         <input type="hidden" name="custom_url" value="{{ selected_url }}">
-                        
+
                         <div class="input-group">
                             <label><i class="fas fa-download"></i> Select Format:</label>
                             <select name="format_id" required>
@@ -80,7 +79,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         <button type="submit" class="btn">
                             <i class="fas fa-download"></i> Download Selected Format
                         </button>
@@ -88,6 +87,39 @@
                 </div>
             </div>
             {% endif %}
+
+            {% if search_results %}
+            <hr class="divider">
+            <h3><i class="fas fa-list"></i> Search Results</h3>
+            <div class="search-results">
+                {% for item in search_results %}
+                <form method="POST" style="margin-bottom: 10px;">
+                    <input type="hidden" name="step" value="info">
+                    <input type="hidden" name="custom_url" value="{{ item.url }}">
+                    <div class="search-item">
+                        {% if item.thumbnails and item.thumbnails|length > 0 %}
+                        <img src="{{ item.thumbnails[0].url }}" alt="Thumbnail"
+                            style="width: 120px; height: auto; margin-right: 10px;">
+                        {% else %}
+                        <div
+                            style="width: 120px; height: 90px; background: #ccc; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        {% endif %}
+                        <div class="search-details">
+                            <strong>{{ item.title }}</strong><br>
+                            <span>{{ item.uploader }}</span><br>
+                            {% if item.duration %}
+                            <span>Duration: {{ item.duration }} seconds</span><br>
+                            {% endif %}
+                            <button type="submit" class="btn btn-small">Select</button>
+                        </div>
+                    </div>
+                </form>
+                {% endfor %}
+            </div>
+            {% endif %}
+
 
             <div id="progress-container">
                 <div class="progress-text">
@@ -121,12 +153,12 @@
 
                 // Add loading state to buttons
                 document.querySelectorAll('form').forEach(form => {
-                    form.addEventListener('submit', function(e) {
+                    form.addEventListener('submit', function (e) {
                         const button = this.querySelector('button[type="submit"]');
                         const originalText = button.innerHTML;
                         button.innerHTML = '<span class="loading"><span class="spinner"></span> Processing...</span>';
                         button.disabled = true;
-                        
+
                         // Re-enable after 30 seconds as fallback
                         setTimeout(() => {
                             button.innerHTML = originalText;
