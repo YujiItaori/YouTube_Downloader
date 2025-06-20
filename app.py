@@ -66,8 +66,12 @@ def index():
         step = request.form.get('step')
         video_url = request.form.get('custom_url') or request.form.get('sample_url')
 
-        if not video_url:
-            return "❌ Error: No URL provided."
+        if step != "search":
+            video_url = request.form.get('custom_url') or request.form.get('sample_url')
+            if not video_url:
+                return "❌ Error: No URL provided."
+        else:
+            video_url = None
 
         # Add delay to avoid being detected as bot
         time.sleep(random.uniform(1, 2))
@@ -112,6 +116,61 @@ def index():
                                          samples=SAMPLE_VIDEOS, 
                                          error="YouTube is blocking automated downloads. Try again in a few minutes or use a different video.")
                 return f"❌ Error getting video info: {error_msg}"
+        
+        elif step == "search":
+            search_query = request.form.get('search_query')
+            if not search_query:
+                return render_template('index.html', samples=SAMPLE_VIDEOS, error="Search query is empty.")
+
+            try:
+                search_opts = get_ydl_opts()
+                search_opts['quiet'] = True
+                search_opts['skip_download'] = True
+                search_opts['extract_flat'] = True  # THIS IS CRUCIAL!
+                
+                # Format the search query properly
+                formatted_query = f"ytsearch10:{search_query}"
+
+                with yt_dlp.YoutubeDL(search_opts) as ydl:
+                    search_result = ydl.extract_info(formatted_query, download=False)
+
+                # Debug print to see what we're getting
+                print(f"DEBUG: Search result type: {type(search_result)}")
+                print(f"DEBUG: Search result keys: {search_result.keys() if isinstance(search_result, dict) else 'Not a dict'}")
+                
+                if search_result and 'entries' in search_result:
+                    entries = search_result['entries']
+                    print(f"DEBUG: Found {len(entries)} entries")
+                    
+                    # Process entries to ensure they have the required fields
+                    processed_entries = []
+                    for entry in entries:
+                        if entry:  # Skip None entries
+                            # Ensure each entry has the required fields
+                            processed_entry = {
+                                'title': entry.get('title', 'Unknown Title'),
+                                'url': entry.get('url', entry.get('webpage_url', '')),
+                                'uploader': entry.get('uploader', entry.get('channel', 'Unknown')),
+                                'thumbnails': entry.get('thumbnails', []),
+                                'id': entry.get('id', ''),
+                                'duration': entry.get('duration', 0)
+                            }
+                            processed_entries.append(processed_entry)
+                    
+                    return render_template('index.html', 
+                                        samples=SAMPLE_VIDEOS, 
+                                        search_results=processed_entries)
+                else:
+                    return render_template('index.html', 
+                                        samples=SAMPLE_VIDEOS, 
+                                        error="No search results found.")
+
+            except Exception as e:
+                print(f"DEBUG: Search error: {str(e)}")
+                return render_template('index.html', 
+                                    samples=SAMPLE_VIDEOS, 
+                                    error=f"Search failed: {str(e)}")
+
 
         elif step == "download":
             format_id = request.form.get('format_id')
