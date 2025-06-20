@@ -3,6 +3,9 @@ A sleek and powerful Flask web app that allows users to download YouTube videos 
 
 ![Screenshot 2025-06-19 122619](https://github.com/user-attachments/assets/f58bbe76-0b51-4978-ab46-a1017e8b6ea9)
 ![Screenshot 2025-06-19 122628](https://github.com/user-attachments/assets/0af4bd4f-8ef9-4517-9cfb-331bcbee51ef)
+![Screenshot 2025-06-20 195439](https://github.com/user-attachments/assets/304cf11e-191d-4653-97fd-08c390455534)
+![Screenshot 2025-06-20 195511](https://github.com/user-attachments/assets/3bf0e8d6-308e-4041-ab9a-d584bbfc0b30)
+
 
 ## 🚀 Features
 - 🔍 **Smart Search**: Search YouTube directly within the app - no need to copy URLs!
