@@ -143,6 +143,7 @@ Try with these sample videos:
 ---
 
 ⭐ Star this repository if you find it helpful! ⭐
+
 "Technology is nothing. What's important is that you have a faith in people, that they're basically good and smart, and if you give them tools, they'll do wonderful things with them." - Steve Jobs
 
 ---
