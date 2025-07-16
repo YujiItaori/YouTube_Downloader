@@ -1,13 +1,6 @@
 # 🎥 YouTube Downloader
 A sleek and powerful Flask web app that allows users to download YouTube videos and playlists in various formats, including audio-only. Built with `yt-dlp`, this downloader offers real-time progress tracking, responsive UI, and support for playlists with intelligent search functionality.
 
-![Screenshot 2025-06-19 122619](https://github.com/user-attachments/assets/f58bbe76-0b51-4978-ab46-a1017e8b6ea9)
-![Screenshot 2025-06-19 122628](https://github.com/user-attachments/assets/0af4bd4f-8ef9-4517-9cfb-331bcbee51ef)
-![Screenshot 2025-06-20 195439](https://github.com/user-attachments/assets/304cf11e-191d-4653-97fd-08c390455534)
-![Screenshot 2025-06-20 195511](https://github.com/user-attachments/assets/3bf0e8d6-308e-4041-ab9a-d584bbfc0b30)
-
-
-
 ## 🚀 Features
 
 - **🔍 Smart Search**: Search YouTube directly within the app - no need to copy URLs!
@@ -146,3 +139,16 @@ Try with these sample videos:
 
 **❌ Error: No URL provided**
 → Ensure you've
+
+---
+
+⭐ Star this repository if you find it helpful! ⭐
+"Technology is nothing. What's important is that you have a faith in people, that they're basically good and smart, and if you give them tools, they'll do wonderful things with them." - Steve Jobs
+
+---
+
+
+![Screenshot 2025-06-19 122619](https://github.com/user-attachments/assets/f58bbe76-0b51-4978-ab46-a1017e8b6ea9)
+![Screenshot 2025-06-19 122628](https://github.com/user-attachments/assets/0af4bd4f-8ef9-4517-9cfb-331bcbee51ef)
+![Screenshot 2025-06-20 195439](https://github.com/user-attachments/assets/304cf11e-191d-4653-97fd-08c390455534)
+![Screenshot 2025-06-20 195511](https://github.com/user-attachments/assets/3bf0e8d6-308e-4041-ab9a-d584bbfc0b30)
